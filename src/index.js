@@ -2,61 +2,79 @@ const addBtn = document.querySelector('#new-toy-btn')
 const toyForm = document.querySelector('.container')
 const toyCollection = document.getElementById("toy-collection")
 let addToy = false
-let submitToy = toyForm.children[0][2]
 
 // YOUR CODE HERE
 document.addEventListener('DOMContentLoaded', () =>{
+
+  function toyBox(toy){
+    let toyBox = document.createElement('div')
+    toyBox.classList.add('card')
+    toyBox.setAttribute('data-id', toy.id)
+    toyBox.innerHTML=`
+        <h2>${toy.name}</h2>
+        <img src='${toy.image}' class="toy-avatar"/>
+        <p><span class='toy-likes'>${toy.likes}</span> Likes</p>
+        <button class="like-btn">Like <3</button>
+        `
+        return toyBox
+      }
+
   fetch('http://localhost:3000/toys')
-  .then(res => res.json())
-  .then(data => {
-    data.forEach((toy)=> {
-      let toyBox = document.createElement('div')
-      toyBox.innerHTML =`
-      <h2>${toy.name}</h2>
-      <img src='${toy.image}' class="toy-avatar"/>
-      <p>${toy.likes} Likes</p>
-      <button class="like-btn">Like <3</button>`
-      toyCollection.append(toyBox)
-
-    })
-  })
-
-addBtn.addEventListener('click', (e) => {
-  e.preventDefault()
-  addToy = !addToy
-  if (addToy) {
-    toyForm.style.display = 'block'
-      submitToy.addEventListener('click', (e) => {
-      e.preventDefault()
-          fetch('http://localhost:3000/toys',{
-            method: "POST",
-            headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              name: toyForm.children[0][0].value,
-              image: toyForm.children[0][1].value,
-              likes: 0
+        .then(res => res.json())
+          .then(data => {
+            data.forEach((toy)=> {
+              toyCollection.appendChild(toyBox(toy))
             })
           })
-        .then(res => res.json())
-        .then(data =>{
-          let newToy = data
-          console.log(newToy)
-          let newToyBox = document.createElement('div')
-          newToyBox.innerHTML =`
-          <h2>${newToy.name}</h2>
-          <img src='${newToy.image}' class="toy-avatar"/>
-          <p>${newToy.likes} Likes</p>
-          <button class="like-btn">Like <3</button>`
-          toyCollection.append(newToyBox)
-        })
+
+  toyForm.addEventListener('submit', (e)=>{
+    e.preventDefault()
+    let toyNameInput = document.querySelector('input[name="name"]')
+    let toyImageInput = document.querySelector('input[name="image"]')
+
+    fetch('http://localhost:3000/toys',{
+      method: "POST",
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: toyNameInput.value,
+        image: toyImageInput.value,
+        likes: 0
+      })
     })
-  } else {
-    toyForm.style.display = 'none'
-  }
-})
+    .then(res => res.json())
+    .then(data =>{
+      toyCollection.appendChild(toyBox(data))
+    })
+    toyNameInput.value = ""
+    toyImageInput.value = ""
+  })
+
+
+  addBtn.addEventListener('click', (e) => {
+    addToy = !addToy
+    if (addToy) {
+      toyForm.style.display = 'block'
+    } else {
+      toyForm.style.display = 'none'
+    }
+  })
+
+  toyCollection.addEventListener('click', (e) => {
+    if(e.target.classList.contains('like-btn')){
+      let parent = event.target.parentNode
+      let toyLikes = parent.querySelector('.toy-likes')
+        fetch(`http://localhost:3000/toys/${parent.getAttribute('data-id')}`, {
+          method: "PATCH",
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+          likes: parseInt(toyLikes.innerText) + 1
+        })
+      }).then(response => response.json())
+        .then(data => toyLikes.innerText = data.likes)
+    }
+  })
 
 })
-// OR HERE!
